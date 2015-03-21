@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import sys
+import datetime
 
 # Shamelessly ripped from stackoverflow.com
 class Vivify(dict):
@@ -11,7 +12,7 @@ class Vivify(dict):
             value = self[item] = type(self)()
             return value
 
-def avg(input, result, smooth):
+def avg(input, smooth):
     for i in range(len(input)):
         if i == 0:
             result[i] = input[i]
@@ -21,6 +22,9 @@ def avg(input, result, smooth):
 def main():
     if len(sys.argv) < 2:
         sys.exit('Usage: ./tdee.py <logfile>')
+    # for a date format we're just going to use days since epoch
+    epoch = datetime.datetime.utcfromtimestamp(0)
+    print(epoch.days())
     data = Vivify()
     f = open(sys.argv[1],'r')
     for line in f.read().splitlines():
