@@ -12,6 +12,7 @@ class DataMap(dict):
     pointcount = 0              # total number of datapoints
     earliest = date.today()     # earliest date in data
     lbskcal = 3555              # calories per pound of fat
+    tperiod = 7                 # days to average TDEE over
 
     def __init__(self, datestr=str(date.today()), weight=0, intake=0, wavg=0, \
                     tdee=0, tavg=0):
@@ -84,13 +85,21 @@ class DataMap(dict):
         '''Calculates the total energy supposedly used every day.'''
         loopday = DataMap.earliest
         while loopday <= date.today():
-            ylbs = self[str(loopday - timedelta(days=1))].wavg
-            ycal = self[str(loopday - timedelta(days=1))].intake
+            ylbs = self[str(loopday - timedelta(days=DataMap.tperiod))].wavg
             tlbs = self[str(loopday)].wavg
+            totallbs = ylbs - tlbs
+            totalcal = totallbs * DataMap.lbskcal
+            i = 0 # like this to gracefully handle first few days of data
+            while i < DataMap.tperiod:
+                cal = self[str(loopday - timedelta(days=i))].intake
+                if cal == 0:
+                    break 
+                totalcal += cal
+                i += 1
             loopday += timedelta(days=1)
-            if tlbs == 0 or ylbs == 0:
+            if tlbs == 0 or ylbs == 0 or i == 0:
                 continue
-            tdee = int((ylbs - tlbs) * DataMap.lbskcal + ycal)
+            tdee = int(totalcal / i)
             self[str(loopday - timedelta(days=1))].tdee = tdee
 
     def avgTDEE(self):
