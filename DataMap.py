@@ -1,29 +1,26 @@
 #!/usr/bin/env python
-# stuff I'm looking for
-# object['date'].weight = 10000
-# object['date'].intake = 10000
-# object.average()
-# object.parseFile(sample_data)
+from datetime import date, timedelta
 
 # TODO:
-## implement average() and parseFile()
-## track date as an integer friendly datetime object
-### EG: data[date-1].weight = blah
+## implement average() and parseFile() and plot()
 class DataMap(dict):
     '''Base class is a perl-like autovivification object with built in vars
-        for metrics that will be tracked'''
+        for metrics that will be tracked. DataMap.day should be used for
+        any date offset calculations'''
     pointcount = 0 
-    def __init__(self,date="", weight=0, intake=0, avg=0):
+    def __init__(self, datestr="1987-11-02", weight=0, intake=0, avg=0, tdee=0):
         DataMap.pointcount += 1
         self.weight = weight
         self.intake = intake
-        self.date = date
+        self.day = date(int(datestr.split('-')[0]),int(datestr.split('-')[1]), \
+                            int(datestr.split('-')[2])) #clean this up somehow
         self.avg = avg
+        self.tdee = tdee
     def __getitem__(self, item):
         try:
             return dict.__getitem__(self, item)
         except KeyError:
-            value = self[item] = type(self)()
+            value = self[item] = type(self)(item)
             return value
 
 # Just for debugging
@@ -41,6 +38,8 @@ def main():
     print(data)
     for key in data:
         print(data[key].weight)
+
+    print(data['2015-03-16'].day)
 
 if __name__ == "__main__":
     main()
