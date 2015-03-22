@@ -18,5 +18,5 @@ set y2range [1200:3900]
 set y2label "kcal"
 set y2tics nomirror
 set xtics nomirror
-plot [:][:] 'final_data' using 1:2 axes x1y1 title "Weight (lbs)" with lines, 'final_data' using 1:4 axes x1y2 title "Intake (kcal)" with lines, 'final_data' using 1:3 axes x1y1 title "Average Weight (lbs)"
+plot [:][:] 'final_data' using 1:2 axes x1y1 title "Weight (lbs)" with lines, 'final_data' using 1:4 axes x1y2 title "Intake (kcal)" with lines, 'final_data' using 1:3 axes x1y1 title "Average Weight (lbs)", 'final_data' using 1:6 axes x1y2 title "TDEE (kcal)"
 
