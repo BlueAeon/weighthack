@@ -20,8 +20,10 @@ class DataMap(dict):
         self.intake = intake
         self.avg = avg
         self.tdee = tdee
-        self.day = date(int(datestr.split('-')[0]),int(datestr.split('-')[1]), \
-                            int(datestr.split('-')[2])) #clean this up somehow
+        year = int(datestr.split('-')[0])
+        month = int(datestr.split('-')[1])
+        day = int(datestr.split('-')[2])
+        self.day = date(year, month, day)
         if self.day < DataMap.earliest:
             DataMap.earliest = self.day
 
@@ -36,10 +38,13 @@ class DataMap(dict):
         ret = ""
         loopday = DataMap.earliest
         while loopday <= date.today():
-            ret += str(loopday) + ": " + str(self[str(loopday)].weight) + \
-                    " " + str(self[str(loopday)].intake) + " " + \
-                    str(self[str(loopday)].avg) + " " + \
-                    str(self[str(loopday)].tdee) + "\n"
+            datestr = str(self[str(loopday)].day)
+            lbs = str(self[str(loopday)].weight)
+            intake = str(self[str(loopday)].intake)
+            avgw = str(self[str(loopday)].avg)
+            tdee = str(self[str(loopday)].tdee)
+            ret += datestr + " " + lbs + " " + intake + " " + avgw + " " + \
+                tdee + "\n"
             loopday += timedelta(days=1)
         return ret
 
