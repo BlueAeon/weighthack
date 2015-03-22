@@ -1,6 +1,7 @@
 # weighthack
 Recreational software for hackers on diets.
 Currently a collection of scripts to aid in charting weight/TDEE with gnuplot.
+WeightHack is being developed for python 3.
 
 # Example Usage
 ./calc.sh sample_data > final_data
