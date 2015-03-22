@@ -13,12 +13,13 @@ class DataMap(dict):
     earliest = date.today()     # earliest date in data
     lbskcal = 3555              # calories per pound of fat
 
-    def __init__(self, datestr=str(date.today()), weight=0, intake=0, avg=0, \
-                    tdee=0):
+    def __init__(self, datestr=str(date.today()), weight=0, intake=0, wavg=0, \
+                    tdee=0, tavg=0):
         DataMap.pointcount += 1
         self.weight = weight
         self.intake = intake
-        self.avg = avg
+        self.tavg = tavg
+        self.wavg = wavg
         self.tdee = tdee
         year = int(datestr.split('-')[0])
         month = int(datestr.split('-')[1])
@@ -41,10 +42,11 @@ class DataMap(dict):
             datestr = str(self[str(loopday)].day)
             lbs = str(self[str(loopday)].weight)
             intake = str(self[str(loopday)].intake)
-            avgw = str(self[str(loopday)].avg)
+            avgw = str(self[str(loopday)].wavg)
             tdee = str(self[str(loopday)].tdee)
+            tavg = str(self[str(loopday)].tavg)
             ret += datestr + " " + lbs + " " + intake + " " + avgw + " " + \
-                tdee + "\n"
+                tdee + " " + tavg + "\n"
             loopday += timedelta(days=1)
         return ret
 
@@ -68,23 +70,23 @@ class DataMap(dict):
     def avgWeight(self):
         loopday = DataMap.earliest
         while loopday < date.today():
-            yavg = self[str(loopday - timedelta(days=1))].avg
+            yavg = self[str(loopday - timedelta(days=1))].wavg
             tlbs = self[str(loopday)].weight
             # calculate weight averages
             if yavg != 0 and tlbs != 0:
-                self[str(loopday)].avg = round((tlbs + yavg)/2, 3)
+                self[str(loopday)].wavg = round((tlbs + yavg)/2, 3)
             else:
                 # restart average on missing data
-                self[str(loopday)].avg = tlbs
+                self[str(loopday)].wavg = tlbs
             loopday += timedelta(days=1)
 
     def calcTDEE(self):
         '''Calculates the total energy supposedly used every day.'''
         loopday = DataMap.earliest
         while loopday <= date.today():
-            ylbs = self[str(loopday - timedelta(days=1))].avg
+            ylbs = self[str(loopday - timedelta(days=1))].wavg
             ycal = self[str(loopday - timedelta(days=1))].intake
-            tlbs = self[str(loopday)].avg
+            tlbs = self[str(loopday)].wavg
             loopday += timedelta(days=1)
             if tlbs == 0 or ylbs == 0:
                 continue
@@ -92,7 +94,17 @@ class DataMap(dict):
             self[str(loopday - timedelta(days=1))].tdee = tdee
 
     def avgTDEE(self):
-        stub = ""
+        loopday = DataMap.earliest
+        while loopday <= date.today():
+            yavg = self[str(loopday - timedelta(days=1))].tavg
+            ttdee = self[str(loopday)].tdee
+            if yavg != 0 and ttdee != 0:
+                self[str(loopday)].tavg = int((yavg + ttdee)/2)
+            else:
+                # reset average if day is missing?
+                self[str(loopday)].tavg = ttdee
+            loopday += timedelta(days=1)
+            
 
 # for debugging
 def main():
@@ -102,6 +114,7 @@ def main():
     
     data.avgWeight()
     data.calcTDEE()
+    data.avgTDEE()
     print(data)
     print(data['2013-03-02'].weight)
 
