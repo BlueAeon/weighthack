@@ -6,12 +6,14 @@ from datetime import date, timedelta
 class DataMap(dict):
     '''Base class is a perl-like autovivification object with built in vars
         for metrics that will be tracked. DataMap.day should be used for
-        any date offset calculations'''
+        any date offset calculations. Right now dates MUST continue up until
+        date.today()'''
 
     pointcount = 0              # total number of datapoints
     earliest = date.today()     # earliest date in data
 
-    def __init__(self, datestr=str(date.today()), weight=0, intake=0, avg=0, tdee=0):
+    def __init__(self, datestr=str(date.today()), weight=0, intake=0, avg=0, \
+                    tdee=0):
         DataMap.pointcount += 1
         self.weight = weight
         self.intake = intake
@@ -31,9 +33,12 @@ class DataMap(dict):
 
     def __str__(self):
         ret = ""
-        for key in self:
-            ret += key + ": " + str(self[key].weight) + " " + \
-                    str(self[key].intake) + " " + str(self[key].avg) + "\n"
+        loopday = DataMap.earliest
+        while loopday <= date.today():
+            ret += str(loopday) + ": " + str(self[str(loopday)].weight) + \
+                    " " + str(self[str(loopday)].intake) + " " + \
+                    str(self[str(loopday)].avg) + "\n"
+            loopday += timedelta(days=1)
         return ret
 
     # TODO: Set unparsed variables as NoneType
@@ -48,20 +53,27 @@ class DataMap(dict):
             return 
         for line in f.read().splitlines():
             word = line.split(' ')
-            self[word[0]].weight = word[1]
-            self[word[0]].intake = word[2]
+            self[word[0]].weight = float(word[1])
+            self[word[0]].intake = int(word[2])
         f.close()
         return DataMap.pointcount 
 
-    # figure out what to do with dates that are missing some data
-    # since dictionaries are unsorted we need a way to iterate through every
-    # date, calculating the average while skipping missing dates? OR
-    # we could create every date before running the average and then find
-    # the earliest and start there.
-    def average(self, smooth):
-        for key in self:
-            stub = ""
-            
+    def averagelbs(self):
+        loopday = DataMap.earliest
+        while loopday < date.today():
+            # calculate weight averages
+            if self[str(loopday - timedelta(days=1))].avg != 0 and \
+                        self[str(loopday)].weight != 0:
+                self[str(loopday)].avg = (self[str(loopday)].weight + \
+                    self[str(loopday - timedelta(days=1))].avg)/2
+                self[str(loopday)].avg = round(self[str(loopday)].avg, 3)
+            else:
+                # restart average on missing data
+                self[str(loopday)].avg = self[str(loopday)].weight
+            loopday += timedelta(days=1)
+
+    def averagekcal(self):
+        stub  = ""
 
 # for debugging
 def main():
@@ -72,8 +84,9 @@ def main():
     data['2015-03-01'].weight = 160
     data['2015-03-01'].intake = 1500
 
+    data.averagelbs()
     print(data)
-    print(data['2015-03-02'].weight)
+    print(data['2013-03-02'].weight)
 
     print(date(2015,3,1) - timedelta(days=1))
     print(data.earliest)
