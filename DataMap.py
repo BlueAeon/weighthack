@@ -45,7 +45,7 @@ class DataMap(dict):
             avgw = str(self[str(loopday)].wavg)
             tdee = str(self[str(loopday)].tdee)
             tavg = str(self[str(loopday)].tavg)
-            ret += datestr + " " + lbs + " " + intake + " " + avgw + " " + \
+            ret += datestr + " " + lbs + " " + avgw + " " + intake + " " + \
                 tdee + " " + tavg + "\n"
             loopday += timedelta(days=1)
         return ret
@@ -109,17 +109,15 @@ class DataMap(dict):
 # for debugging
 def main():
     data = DataMap()
-    
     data.parseFile("sample_data")
-    
     data.avgWeight()
     data.calcTDEE()
     data.avgTDEE()
-    print(data)
-    print(data['2013-03-02'].weight)
+    
+    # need to figure out how to clean up empty dicts
+    del data['2015-02-15']
 
-    print(date(2015,3,1) - timedelta(days=1))
-    print(data.earliest)
+    print(data)
 
 if __name__ == "__main__":
     main()
