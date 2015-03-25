@@ -126,9 +126,13 @@ def main():
     data.avgTDEE()
     
     # need to figure out how to clean up empty dicts
-    del data['2015-02-15']
+    # Maybe start at earlist and loop forward checking for 
+    # Unset DataMaps (hackish)
+    # del data['2015-03-20']
 
     print(data)
+   
+    print(data.earliest)
 
 if __name__ == "__main__":
     main()
