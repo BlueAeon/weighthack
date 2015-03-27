@@ -7,3 +7,5 @@ WeightHack is being developed for python 3.
 ./calc.sh sample_data > final_data      # for weight curve only
 ./DataMap.py > final_data               # python POC
 gnuplot plot
+
+![alt tag](https://raw.githubusercontent.com/BlueAeon/weighthack/4b28eb0edca2e233371396580bf047b5ac7e357d/img/sample_graph.png)
