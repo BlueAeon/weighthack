@@ -63,8 +63,20 @@ class DataMap(dict):
             return 
         for line in f.read().splitlines():
             word = line.split(' ')
-            self[word[0]].weight = float(word[1])
-            self[word[0]].intake = int(word[2])
+            # What to do when there's missing data? Skip to next and let 
+            # GNUPlot average? Set to zero and ruin our averages?
+            if len(word) < 2:
+                continue
+            try:
+                self[word[0]].weight = float(word[1])
+            except (IndexError, ValueError) as e:
+                self[word[0]].weight = 0
+                continue
+            try:
+                self[word[0]].intake = int(word[2])
+            except (IndexError, ValueError) as e:
+                self[word[0]].intake = 0 
+                continue
         f.close()
         return DataMap.pointcount 
 
@@ -115,7 +127,6 @@ class DataMap(dict):
                 # reset average if day is missing?
                 self[str(loopday)].tavg = ttdee
             loopday += timedelta(days=1)
-            
 
 # for debugging
 def main():
