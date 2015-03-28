@@ -2,7 +2,8 @@
 from datetime import date, timedelta
 
 # TODO:
-## implement average() and plot()
+## implement average() and plot(), implement gnuplot or scipy
+## fix the weight curve
 class DataMap(dict):
     '''Base class is a perl-like autovivification object with built in vars
         for metrics that will be tracked. DataMap.day should be used for
@@ -14,8 +15,8 @@ class DataMap(dict):
     lbskcal = 3555              # calories per pound of fat
     tperiod = 14                 # days to average TDEE over
 
-    def __init__(self, datestr=str(date.today()), weight=0, intake=0, wavg=0, \
-                    tdee=0, tavg=0):
+    def __init__(self, datestr=str(date.today()), weight=-1, intake=-1, wavg=-1, \
+                    tdee=-1, tavg=-1):
         DataMap.pointcount += 1
         self.weight = weight
         self.intake = intake
@@ -46,12 +47,14 @@ class DataMap(dict):
             avgw = str(self[str(loopday)].wavg)
             tdee = str(self[str(loopday)].tdee)
             tavg = str(self[str(loopday)].tavg)
-            ret += datestr + " " + lbs + " " + avgw + " " + intake + " " + \
-                tdee + " " + tavg + "\n"
+            if "-1" in (lbs, intake, avgw, tdee, tavg): # remove with gnuplot
+                ret += "\n"
+            else:
+                ret += datestr + " " + lbs + " " + avgw + " " + intake + " " + \
+                    tdee + " " + tavg + "\n"
             loopday += timedelta(days=1)
         return ret
 
-    # TODO: Set unparsed variables as NoneType
     def parseFile(self, filestr):
         ''' parseFile() expects a string whos path has a file which cointains
             newline sperated entries in the form "<date> <weight> <intake>\n"
@@ -70,12 +73,12 @@ class DataMap(dict):
             try:
                 self[word[0]].weight = float(word[1])
             except (IndexError, ValueError) as e:
-                self[word[0]].weight = 0
+                self[word[0]].weight = -1 
                 continue
             try:
                 self[word[0]].intake = int(word[2])
             except (IndexError, ValueError) as e:
-                self[word[0]].intake = 0 
+                self[word[0]].intake = -1 
                 continue
         f.close()
         return DataMap.pointcount 
@@ -99,19 +102,19 @@ class DataMap(dict):
         while loopday <= date.today():
             ylbs = self[str(loopday - timedelta(days=DataMap.tperiod))].wavg
             tlbs = self[str(loopday)].wavg
-            if ylbs == 0: # handle first tperiod of data
+            if ylbs == -1: # handle first tperiod of data
                 ylbs = tlbs
             totallbs = ylbs - tlbs
             totalcal = totallbs * DataMap.lbskcal
             i = 0
             while i < DataMap.tperiod:
                 cal = self[str(loopday - timedelta(days=i))].intake
-                if cal == 0:
+                if cal == -1:
                     break 
                 totalcal += cal
                 i += 1
             loopday += timedelta(days=1)
-            if tlbs == 0 or ylbs == 0 or i == 0:
+            if tlbs == -1 or ylbs == -1 or i == 0:
                 continue
             tdee = int(totalcal / i)
             self[str(loopday - timedelta(days=1))].tdee = tdee
@@ -143,7 +146,5 @@ def main():
 
     print(data)
    
-    print(data.earliest)
-
 if __name__ == "__main__":
     main()
