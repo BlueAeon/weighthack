@@ -13,7 +13,7 @@ class DataMap(dict):
     pointcount = 0              # total number of datapoints
     earliest = date.today()     # earliest date in data
     lbskcal = 3555              # calories per pound of fat
-    tperiod = 14                 # days to average TDEE over
+    tperiod = 14                # days to average TDEE over
 
     def __init__(self, datestr=str(date.today()), weight=-1, intake=-1, wavg=-1, \
                     tdee=-1, tavg=-1):
@@ -89,7 +89,7 @@ class DataMap(dict):
             yavg = self[str(loopday - timedelta(days=1))].wavg
             tlbs = self[str(loopday)].weight
             # calculate weight averages
-            if yavg != 0 and tlbs != 0:
+            if yavg != -1 and tlbs != -1:
                 self[str(loopday)].wavg = round((tlbs + yavg)/2, 3)
             else:
                 # restart average on missing data
