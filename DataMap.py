@@ -124,7 +124,7 @@ class DataMap(dict):
         while loopday <= date.today():
             yavg = self[str(loopday - timedelta(days=1))].tavg
             ttdee = self[str(loopday)].tdee
-            if yavg != 0 and ttdee != 0:
+            if (yavg != 0 and ttdee != 0) and yavg != -1:
                 self[str(loopday)].tavg = int((yavg + ttdee)/2)
             else:
                 # reset average if day is missing?
