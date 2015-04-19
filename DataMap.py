@@ -1,9 +1,7 @@
 #!/usr/bin/env python
 from datetime import date, timedelta
+import numpy as np
 
-# TODO:
-## implement average() and plot(), implement gnuplot or scipy
-## fix the weight curve
 class DataMap(dict):
     '''Base class is a perl-like autovivification object with built in vars
         for metrics that will be tracked. DataMap.day should be used for
@@ -14,6 +12,7 @@ class DataMap(dict):
     earliest = date.today()     # earliest date in data
     lbskcal = 3555              # calories per pound of fat
     tperiod = 14                # days to average TDEE over
+    wsize = 20                  # EMA window size
 
     def __init__(self, datestr=str(date.today()), weight=-1, intake=-1, wavg=-1, \
                     tdee=-1, tavg=-1):
@@ -83,18 +82,28 @@ class DataMap(dict):
         f.close()
         return DataMap.pointcount 
 
+    def EMA(self, values, window):
+        weights = np.exp(np.linspace(-1., 0., window))
+        weights /= weights.sum()
+        a = np.convolve(values, weights)[:len(values)]
+        a[:window] = a[window]
+        return a
+
+    #TODO: Figure out what to do with blank days, curve updates before window is complete
     def avgWeight(self):
+        lbs = []
+        # find the range of time we're concerned with
         loopday = DataMap.earliest
         while loopday < date.today():
-            yavg = self[str(loopday - timedelta(days=1))].wavg
-            tlbs = self[str(loopday)].weight
-            # calculate weight averages
-            if yavg != -1 and tlbs != -1:
-                self[str(loopday)].wavg = round((tlbs + yavg)/2, 3)
-            else:
-                # restart average on missing data
-                self[str(loopday)].wavg = tlbs
+            # generate an array of weights for window
+            lbs.append(self[str(loopday)].weight)
             loopday += timedelta(days=1)
+        # generate EMA for window
+        albs = self.EMA(lbs, self.wsize)
+        # backfill wavg for that date
+        loopday = DataMap.earliest
+        for i in range(0, albs.size):
+            self[str(loopday + timedelta(days=i))].wavg = albs[i]
 
     def calcTDEE(self):
         '''Calculates the total energy supposedly used every day.'''
