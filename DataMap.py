@@ -13,6 +13,7 @@ class DataMap(dict):
     lbskcal = 3555              # calories per pound of fat
     tperiod = 14                # days to average TDEE over
     wsize = 20                  # EMA window size
+    guesswin = 3                # EMA window size for guessing
 
     def __init__(self, datestr=str(date.today()), weight=-1, intake=-1, wavg=-1, \
                     tdee=-1, tavg=-1):
@@ -47,6 +48,9 @@ class DataMap(dict):
             tdee = str(self[str(loopday)].tdee)
             tavg = str(self[str(loopday)].tavg)
             if "-1" in (lbs, intake, avgw, tdee, tavg): # remove with gnuplot
+                #ret += "REJECTED:"
+                #ret += datestr + " " + lbs + " " + avgw + " " + intake + " " + \
+                #    tdee + " " + tavg + "\n"
                 ret += "\n"
             else:
                 ret += datestr + " " + lbs + " " + avgw + " " + intake + " " + \
@@ -89,7 +93,6 @@ class DataMap(dict):
         a[:window] = a[window]
         return a
 
-    #TODO: Figure out what to do with blank days, curve updates before window is complete
     def avgWeight(self):
         lbs = []
         # find the range of time we're concerned with
@@ -103,7 +106,7 @@ class DataMap(dict):
         # backfill wavg for that date
         loopday = DataMap.earliest
         for i in range(0, albs.size):
-            self[str(loopday + timedelta(days=i))].wavg = albs[i]
+            self[str(loopday + timedelta(days=i))].wavg = round(albs[i],1)
 
     def calcTDEE(self):
         '''Calculates the total energy supposedly used every day.'''
@@ -140,12 +143,47 @@ class DataMap(dict):
                 self[str(loopday)].tavg = ttdee
             loopday += timedelta(days=1)
 
+    # guessIntake will read back wsize (e.g: 20) days, recalculate weight with a n-day 
+    # average then guess intake on the assumption that TDEE has stayed the same.
+    def guessIntake(self, date):
+        # Find difference from yesterdays weight with n-day EMA
+        lbs = []
+        albs = []
+        date -= timedelta(days=self.wsize)
+        # Create weight average array
+        for i in range(0, self.wsize):
+            x = self[str(date + timedelta(days=i))].wavg
+            if x == -1:             #update this to work before n days?
+                return
+            lbs.append(x)
+        date += timedelta(days=self.wsize)
+        albs = self.EMA(lbs, self.guesswin)
+        # difference from yesterday (use n-day avg for better accuracy)
+        diff = albs[self.wsize-1] - albs[self.wsize-2]
+        tdee = self[str(date - timedelta(days=1))].tdee
+        self[str(date)].tdee = tdee                 # Carry over yesterdays TDEE
+        intake = int(tdee + (diff * self.lbskcal))
+        self[str(date)].intake = intake
+
+    def guessWeight(self, date):
+        x = 10
+    
+    def guessMissingData(self):
+        loopday = DataMap.earliest
+        while loopday < date.today():
+            if self[str(loopday)].intake == -1:
+                self.guessIntake(loopday)
+            if self[str(loopday)].weight == -1:
+                self.guessWeight(loopday)
+            loopday += timedelta(days=1)
+
 # for debugging
 def main():
     data = DataMap()
     data.parseFile("sample_data")
     data.avgWeight()
     data.calcTDEE()
+    data.guessMissingData()
     data.avgTDEE()
     
     # need to figure out how to clean up empty dicts
