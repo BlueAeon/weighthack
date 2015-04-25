@@ -93,18 +93,33 @@ class DataMap(dict):
         a[:window] = a[window]
         return a
 
-    def avgWeight(self):
+    def avgWeight(self, startdate):
         lbs = []
-        # find the range of time we're concerned with
-        loopday = DataMap.earliest
+        loopday = startdate
+
         while loopday < date.today():
-            # generate an array of weights for window
             lbs.append(self[str(loopday)].weight)
             loopday += timedelta(days=1)
-        # generate EMA for window
+
+        #for i in range(1, self.wsize):
+        #    print(self.EMA(lbs, i))
+
+        # First pass average
         albs = self.EMA(lbs, self.wsize)
-        # backfill wavg for that date
-        loopday = DataMap.earliest
+
+        # Fix starting point
+        albs[0] = self[str(startdate)].weight
+
+        # Fix early dates
+        for index in range(1, self.wsize):
+            # This is really inefficient
+            # from zero to wsize call EMA, save last result to albs 
+            temp = self.EMA(lbs, index)
+            albs[index] = temp[index]
+            #print(temp)
+            
+        loopday = startdate
+
         for i in range(0, albs.size):
             self[str(loopday + timedelta(days=i))].wavg = round(albs[i],1)
 
@@ -145,6 +160,7 @@ class DataMap(dict):
 
     # guessIntake will read back wsize (e.g: 20) days, recalculate weight with a n-day 
     # average then guess intake on the assumption that TDEE has stayed the same.
+    # Eventually seperate out plots for real/guessed values
     def guessIntake(self, date):
         # Find difference from yesterdays weight with n-day EMA
         lbs = []
@@ -166,6 +182,7 @@ class DataMap(dict):
         self[str(date)].intake = intake
 
     def guessWeight(self, date):
+        # TODO: implement guessWeight()
         x = 10
     
     def guessMissingData(self):
@@ -181,7 +198,7 @@ class DataMap(dict):
 def main():
     data = DataMap()
     data.parseFile("sample_data")
-    data.avgWeight()
+    data.avgWeight(data.earliest)
     data.calcTDEE()
     data.guessMissingData()
     data.avgTDEE()

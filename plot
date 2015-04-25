@@ -13,8 +13,8 @@ set style data linespoints
 set timefmt "%Y-%m-%d"
 set ylabel "lbs"
 set ytics nomirror
-set yrange [190:200]
-set y2range [1200:3900]
+set yrange [170:205]
+set y2range [1200:7000]
 set y2label "kcal"
 set y2tics nomirror
 set xtics nomirror
