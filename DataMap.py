@@ -39,7 +39,7 @@ class DataMap(dict):
 
     def __str__(self):
         ret = ""
-        loopday = DataMap.earliest
+        loopday = self.earliest
         while loopday <= date.today():
             datestr = str(self[str(loopday)].day)
             lbs = str(self[str(loopday)].weight)
@@ -48,10 +48,10 @@ class DataMap(dict):
             tdee = str(self[str(loopday)].tdee)
             tavg = str(self[str(loopday)].tavg)
             if "-1" in (lbs, intake, avgw, tdee, tavg): # remove with gnuplot
-                #ret += "REJECTED:"
-                #ret += datestr + " " + lbs + " " + avgw + " " + intake + " " + \
-                #    tdee + " " + tavg + "\n"
-                ret += "\n"
+                ret += "REJECTED:"
+                ret += datestr + " " + lbs + " " + avgw + " " + intake + " " + \
+                    tdee + " " + tavg + "\n"
+                #ret += "\n"
             else:
                 ret += datestr + " " + lbs + " " + avgw + " " + intake + " " + \
                     tdee + " " + tavg + "\n"
@@ -94,15 +94,13 @@ class DataMap(dict):
         return a
 
     def avgWeight(self, startdate):
+        ''' Generate exponentially curved moving average of weight'''
         lbs = []
         loopday = startdate
 
         while loopday < date.today():
             lbs.append(self[str(loopday)].weight)
             loopday += timedelta(days=1)
-
-        #for i in range(1, self.wsize):
-        #    print(self.EMA(lbs, i))
 
         # First pass average
         albs = self.EMA(lbs, self.wsize)
@@ -119,9 +117,25 @@ class DataMap(dict):
             #print(temp)
             
         loopday = startdate
-
         for i in range(0, albs.size):
             self[str(loopday + timedelta(days=i))].wavg = round(albs[i],1)
+
+    def avgTDEE(self, startdate):
+        tdee = []
+        loopday = DataMap.earliest
+
+        while loopday <= date.today():
+            tdee.append(self[str(loopday)].tdee)
+            loopday += timedelta(days=1)
+
+        atdee = self.EMA(tdee, self.wsize)
+        atdee[0] = self[str(startdate)].tdee
+        for index in range(1, self.wsize):
+            temp = self.EMA(tdee, index)
+            atdee[index] = temp[index]
+        loopday = startdate
+        for i in range(0, atdee.size):
+            self[str(loopday + timedelta(days=1))].tavg = round(atdee[i],1)
 
     def calcTDEE(self):
         '''Calculates the total energy supposedly used every day.'''
@@ -146,17 +160,6 @@ class DataMap(dict):
             tdee = int(totalcal / i)
             self[str(loopday - timedelta(days=1))].tdee = tdee
 
-    def avgTDEE(self):
-        loopday = DataMap.earliest
-        while loopday <= date.today():
-            yavg = self[str(loopday - timedelta(days=1))].tavg
-            ttdee = self[str(loopday)].tdee
-            if (yavg != 0 and ttdee != 0) and yavg != -1:
-                self[str(loopday)].tavg = int((yavg + ttdee)/2)
-            else:
-                # reset average if day is missing?
-                self[str(loopday)].tavg = ttdee
-            loopday += timedelta(days=1)
 
     # guessIntake will read back wsize (e.g: 20) days, recalculate weight with a n-day 
     # average then guess intake on the assumption that TDEE has stayed the same.
@@ -181,9 +184,27 @@ class DataMap(dict):
         intake = int(tdee + (diff * self.lbskcal))
         self[str(date)].intake = intake
 
-    def guessWeight(self, date):
-        # TODO: implement guessWeight()
-        x = 10
+    def guessWeight(self, startdate):
+        ''' Iterates through weights and plots a straight line between missing days '''
+        loopday = startdate
+        if self[str(loopday - timedelta(days=1))].weight == -1:    # fail without weight history
+            return
+        while self[str(loopday)].weight == -1:
+            loopday += timedelta(days=1)
+
+        # calc difference per day
+        time = (loopday - startdate).days
+        distance = self[str(loopday)].weight - self[str(startdate - timedelta(days=1))].weight 
+        rate = distance / time
+        #print("loopday.weight: " + str(self[str(loopday)].weight))
+        #print("startdate.weight: " + str(self[str(startdate - timedelta(days=1))].weight))
+        #print("Date: " + str(startdate) + " Rate: " + str(rate) + " Distance: " + str(distance) + " Time: " + str(time))
+
+        # loop through setting weight
+        while startdate < loopday:
+            self[str(startdate)].weight = round(self[str(startdate - timedelta(days=1))].weight + rate, 1)
+            #print("Guessing weight: " + str(self[str(startdate)].weight))
+            startdate += timedelta(days=1)
     
     def guessMissingData(self):
         loopday = DataMap.earliest
@@ -194,14 +215,25 @@ class DataMap(dict):
                 self.guessWeight(loopday)
             loopday += timedelta(days=1)
 
+    def findEarliest(self):
+        # TODO: Figure out how to add this into DataMap constructors
+        ''' Correctly sets earliest to date with intake or weight. '''
+        while self.earliest < date.today():
+            if self[str(self.earliest)].weight != -1:
+                return
+            if self[str(self.earliest)].intake != -1:
+                return
+            self.earliest += timedelta(days=1)
+
 # for debugging
 def main():
     data = DataMap()
     data.parseFile("sample_data")
+    data.findEarliest()
     data.avgWeight(data.earliest)
     data.calcTDEE()
     data.guessMissingData()
-    data.avgTDEE()
+    data.avgTDEE(data.earliest)
     
     # need to figure out how to clean up empty dicts
     # Maybe start at earlist and loop forward checking for 
@@ -209,6 +241,7 @@ def main():
     # del data['2015-03-20']
 
     print(data)
+    #print(data.earliest)
    
 if __name__ == "__main__":
     main()
