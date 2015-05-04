@@ -136,8 +136,8 @@ class DataMap(dict):
             temp = self.EMA(tdee, index)
             atdee[index] = temp[index]
         loopday = startdate
-        for i in range(0, atdee.size):
-            self[str(loopday + timedelta(days=1))].tavg = round(atdee[i],1)
+        for i in range(1, atdee.size):
+            self[str(loopday + timedelta(days=i))].tavg = int(atdee[i])
 
     def calcTDEE(self):
         '''Calculates the total energy supposedly used every day.'''
